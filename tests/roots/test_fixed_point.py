@@ -70,3 +70,30 @@ def test_fixed_point_history_length_matches_iterations():
 
     assert result.history is not None
     assert len(result.history) == result.iterations
+
+def test_fixed_point_respects_function_tolerance():
+    result = fixed_point(
+        lambda x: 0.5 * x + 1.0,
+        0.0,
+        options=SolverOptions(
+            maxiter=10,
+            xtol=1e-20,
+            rtol=1e-20,
+            ftol=1.1,
+        ),
+    )
+
+    assert result.converged
+    assert result.solution == 0.0
+    assert result.iterations == 0
+    assert result.residual == 1.0
+
+def test_fixed_point_residual_matches_returned_solution():
+    g = lambda x: 0.5 * x + 1.0
+
+    result = fixed_point(g, 0.0)
+
+    assert result.converged
+    assert result.residual == pytest.approx(
+        abs(g(result.solution) - result.solution)
+    )
