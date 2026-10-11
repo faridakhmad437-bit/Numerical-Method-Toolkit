@@ -1,5 +1,6 @@
 import math
 from collections.abc import Callable
+from matplotlib.pyplot import step
 from numerical_toolkit.core.exceptions import DerivativeZeroError, NonFiniteValueError
 from numerical_toolkit.core.options import SolverOptions
 from numerical_toolkit.core.results import SolverResult
@@ -21,7 +22,28 @@ def newton(f: Callable[[float],float], df: Callable[[float],float], x0: float, *
         if not math.isfinite(fn): raise NonFiniteValueError("f(x_new) must be finite.")
         step=abs(xn-x); rel=step/max(1.0,abs(xn))
         if o.store_history: hist.append(xn)
-        if abs(fn)<=o.ftol or step<=o.xtol or rel<=o.rtol:
-            return SolverResult(xn,True,k,calls,abs(fn),step,"Converged successfully.",tuple(hist) if o.store_history else None)
+        if abs(fn) <= o.ftol:
+            return SolverResult(
+                xn,
+                True,
+                k,
+                calls,
+                abs(fn),
+                step,
+                "Converged successfully: residual tolerance satisfied.",
+                tuple(hist) if o.store_history else None,
+            )
+
+        if step <= o.xtol or rel <= o.rtol:
+            return SolverResult(
+                xn,
+                False,
+                k,
+                calls,
+                abs(fn),
+                step,
+                "Step tolerance reached before residual tolerance.",
+                tuple(hist) if o.store_history else None,
+            )
         x,fx,prev_step=xn,fn,step
     return SolverResult(x,False,o.maxiter,calls,abs(fx),prev_step,"Maximum number of iterations reached.",tuple(hist) if o.store_history else None)

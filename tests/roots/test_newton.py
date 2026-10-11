@@ -111,3 +111,21 @@ def test_newton_history_length_matches_iterations():
 
     assert result.history is not None
     assert len(result.history) == result.iterations
+
+def test_newton_does_not_stop_on_small_step_with_large_residual():
+    scale = 1e12
+
+    result = newton(
+        lambda x: math.exp(scale * x),
+        lambda x: scale * math.exp(scale * x),
+        0.0,
+        options=SolverOptions(
+            maxiter=1,
+            xtol=1e-10,
+            rtol=1e-8,
+            ftol=1e-10,
+        ),
+    )
+
+    assert result.converged is False
+    assert result.residual > 1e-10
