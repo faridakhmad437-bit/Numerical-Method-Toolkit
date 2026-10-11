@@ -33,3 +33,11 @@ def test_package_version_matches_project_metadata():
     pyproject = (SRC.parent / "pyproject.toml").read_text(encoding="utf-8")
 
     assert f'version="{numerical_toolkit.__version__}"' in pyproject.replace(" ", "")
+
+
+def test_project_declares_license_file():
+    root = SRC.parent
+    pyproject = (root / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert (root / "LICENSE").is_file()
+    assert 'license="MIT"' in pyproject.replace(" ", "")

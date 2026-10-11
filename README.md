@@ -141,3 +141,7 @@ docs/              algorithm reference
   NumPy provides naturally.
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
+
+## License
+
+Released under the [MIT License](LICENSE).

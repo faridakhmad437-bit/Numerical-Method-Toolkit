@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [1.0.0] — Unreleased
+## [1.0.0] — 2026-10-12
 
 First stable release of the public API.
 
@@ -65,5 +65,6 @@ First stable release of the public API.
   quick start, API summary, and limitations.
 - Tests that import the package without dev dependencies, run the quickstart,
   and execute the README examples.
+- MIT license.
 - Ruff configuration and a GitHub Actions workflow for lint, tests on
   Python 3.11–3.14, and a clean wheel install.
