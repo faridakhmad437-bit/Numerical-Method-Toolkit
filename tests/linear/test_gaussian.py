@@ -274,3 +274,40 @@ def test_gaussian_does_not_modify_inputs():
 
     np.testing.assert_array_equal(A, A_original)
     np.testing.assert_array_equal(b, b_original)
+
+
+def test_gaussian_handles_small_scaled_system():
+    A = np.array([
+        [2e-20, 1e-20],
+        [1e-20, 3e-20],
+    ])
+    b = np.array([5e-20, 7e-20])
+
+    x = gaussian_elimination(A, b)
+
+    np.testing.assert_allclose(
+        A @ x,
+        b,
+        rtol=1e-12,
+        atol=1e-30,
+    )
+
+
+def test_gaussian_rejects_non_finite_rhs():
+    A = np.eye(2)
+    b = np.array([1.0, math.inf])
+
+    with pytest.raises(NonFiniteValueError):
+        gaussian_elimination(A, b)
+
+
+def test_gaussian_rejects_boolean_matrix_input():
+    A = np.array([
+        [True, False],
+        [False, True],
+    ])
+    b = np.array([1.0, 2.0])
+
+    # Boolean matrices are not accepted as numeric system matrices.
+    with pytest.raises(InvalidInputError):
+        gaussian_elimination(A, b)

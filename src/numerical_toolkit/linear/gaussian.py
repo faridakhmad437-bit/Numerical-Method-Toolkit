@@ -1,3 +1,4 @@
+
 import numpy as np
 
 from numerical_toolkit.core.exceptions import (
@@ -7,46 +8,56 @@ from numerical_toolkit.core.exceptions import (
 
 
 def gaussian_elimination(A, b):
-    A = np.asarray(A, dtype=float)
-    b = np.asarray(b, dtype=float)
+    """Solve a square linear system using Gaussian elimination.
 
-    # Validate matrix/vector dimensions.
+    Partial pivoting is used to improve numerical stability.
+    """
+    # Reject boolean inputs before NumPy converts them to floats.
+    raw_A = np.asarray(A)
+    raw_b = np.asarray(b)
+
+    if raw_A.dtype.kind == "b" or raw_b.dtype.kind == "b":
+        raise InvalidInputError("A and b must contain numeric, non-boolean values.")
+
+    try:
+        A = np.asarray(A, dtype=float)
+        b = np.asarray(b, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise InvalidInputError("A and b must contain valid numeric values.") from exc
+
     if (
         A.ndim != 2
         or A.shape[0] != A.shape[1]
         or b.shape != (A.shape[0],)
     ):
-        raise InvalidInputError(
-            "A must be square and b must match its size."
-        )
+        raise InvalidInputError("A must be square and b must match its size.")
 
-    # Empty linear systems are not meaningful for this solver.
     if A.shape[0] == 0:
-        raise InvalidInputError(
-            "A and b must define a non-empty linear system."
-        )
+        raise InvalidInputError("A and b must define a non-empty linear system.")
 
-    # Reject NaN and infinity before numerical operations.
     if not np.all(np.isfinite(A)):
-        raise NonFiniteValueError(
-            "A must contain only finite values."
-        )
+        raise NonFiniteValueError("A must contain only finite values.")
 
     if not np.all(np.isfinite(b)):
-        raise NonFiniteValueError(
-            "b must contain only finite values."
-        )
+        raise NonFiniteValueError("b must contain only finite values.")
 
-    M = np.column_stack([A, b]).copy()
+    # Scale the coefficient matrix to avoid using an absolute pivot threshold.
+    matrix_scale = np.max(np.abs(A))
+    if matrix_scale == 0.0:
+        raise InvalidInputError("Matrix is singular.")
+
+    M = np.column_stack([A / matrix_scale, b / matrix_scale])
     n = len(b)
 
-    # Forward elimination with partial pivoting.
+    # Use a scale-aware tolerance on the normalized coefficient matrix.
+    pivot_tol = np.finfo(float).eps * n
+
     for k in range(n - 1):
         p = k + int(np.argmax(np.abs(M[k:, k])))
 
-        if abs(M[p, k]) < 1e-14:
+        if abs(M[p, k]) <= pivot_tol:
             raise InvalidInputError(
-                "Matrix is singular or nearly singular."
+                "Matrix is singular or numerically rank-deficient."
             )
 
         if p != k:
@@ -54,21 +65,22 @@ def gaussian_elimination(A, b):
 
         for i in range(k + 1, n):
             factor = M[i, k] / M[k, k]
-            M[i, k:] -= factor * M[k, k:]
+            M[i, k] = 0.0
+            M[i, k + 1:] -= factor * M[k, k + 1:]
 
-    # Validate the final pivot.
-    if abs(M[-1, -2]) < 1e-14:
+    if abs(M[-1, -2]) <= pivot_tol:
         raise InvalidInputError(
-            "Matrix is singular or nearly singular."
+            "Matrix is singular or numerically rank-deficient."
         )
 
-    # Back substitution.
     x = np.zeros(n)
 
     for i in range(n - 1, -1, -1):
         x[i] = (
-            M[i, -1]
-            - np.dot(M[i, i + 1:n], x[i + 1:n])
+            M[i, -1] - np.dot(M[i, i + 1:n], x[i + 1:n])
         ) / M[i, i]
+
+    if not np.all(np.isfinite(x)):
+        raise NonFiniteValueError("The computed solution is non-finite.")
 
     return x
