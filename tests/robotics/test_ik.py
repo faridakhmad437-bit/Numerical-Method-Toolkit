@@ -593,6 +593,33 @@ def test_planar_2link_ik_unreachable_target_does_not_claim_success():
     )
 
 
+def test_planar_2link_ik_accepts_maximum_reach_boundary():
+    result = planar_2link_ik(
+        [1.8, 0.0],
+        1.0,
+        0.8,
+        initial=(0.0, 0.0),
+    )
+
+    assert result.converged is True
+    assert result.iterations == 0
+    assert result.residual == pytest.approx(0.0, abs=1e-12)
+
+
+def test_planar_2link_ik_accepts_minimum_reach_boundary():
+    result = planar_2link_ik(
+        [0.2, 0.0],
+        1.0,
+        0.8,
+        initial=(0.0, np.pi),
+    )
+
+    assert result.converged is True
+    assert result.iterations == 0
+    assert result.residual == pytest.approx(0.0, abs=1e-12)
+
+
+
 # ============================================================================
 # Planar 2-Link IK — Non-finite Inputs
 # ============================================================================
