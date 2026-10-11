@@ -111,3 +111,10 @@ def test_bisection_history_contains_midpoints():
 
     assert result.history is not None
     assert len(result.history) == result.iterations
+
+def test_bisection_rejects_same_sign_values_that_underflow():
+    def f(x):
+        return 1e-200 * (x**2 + 1)
+
+    with pytest.raises(InvalidBracketError):
+        bisection(f, -1.0, 1.0)
