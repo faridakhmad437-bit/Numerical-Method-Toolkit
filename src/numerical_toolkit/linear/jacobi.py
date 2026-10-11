@@ -11,6 +11,7 @@ from numerical_toolkit.core.exceptions import (
 )
 from numerical_toolkit.core.options import SolverOptions
 from numerical_toolkit.core.results import SolverResult
+from numerical_toolkit.core.validation import as_float_array
 
 
 def jacobi(
@@ -29,22 +30,8 @@ def jacobi(
             "options must be a SolverOptions instance or None."
         )
 
-    # Reject boolean arrays before conversion to floating point.
-    raw_A = np.asarray(A)
-    raw_b = np.asarray(b)
-
-    if raw_A.dtype.kind == "b" or raw_b.dtype.kind == "b":
-        raise InvalidInputError(
-            "A and b must contain numeric, non-boolean values."
-        )
-
-    try:
-        A = np.asarray(A, dtype=float)
-        b = np.asarray(b, dtype=float)
-    except (TypeError, ValueError, OverflowError) as exc:
-        raise InvalidInputError(
-            "A and b must contain valid numeric values."
-        ) from exc
+    A = as_float_array(A, "A")
+    b = as_float_array(b, "b")
 
     if A.ndim != 2:
         raise InvalidInputError("A must be a two-dimensional matrix.")
@@ -80,19 +67,7 @@ def jacobi(
     if x0 is None:
         x = np.zeros_like(b)
     else:
-        raw_x0 = np.asarray(x0)
-
-        if raw_x0.dtype.kind == "b":
-            raise InvalidInputError(
-                "x0 must contain numeric, non-boolean values."
-            )
-
-        try:
-            x = np.asarray(x0, dtype=float).copy()
-        except (TypeError, ValueError, OverflowError) as exc:
-            raise InvalidInputError(
-                "x0 must contain valid numeric values."
-            ) from exc
+        x = as_float_array(x0, "x0").copy()
 
         if x.shape != b.shape:
             raise InvalidInputError("x0 must have the same shape as b.")

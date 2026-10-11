@@ -5,6 +5,7 @@ from numerical_toolkit.core.exceptions import (
     InvalidInputError,
     NonFiniteValueError,
 )
+from numerical_toolkit.core.validation import as_float_array
 
 
 def gaussian_elimination(A, b):
@@ -12,18 +13,8 @@ def gaussian_elimination(A, b):
 
     Partial pivoting is used to improve numerical stability.
     """
-    # Reject boolean inputs before NumPy converts them to floats.
-    raw_A = np.asarray(A)
-    raw_b = np.asarray(b)
-
-    if raw_A.dtype.kind == "b" or raw_b.dtype.kind == "b":
-        raise InvalidInputError("A and b must contain numeric, non-boolean values.")
-
-    try:
-        A = np.asarray(A, dtype=float)
-        b = np.asarray(b, dtype=float)
-    except (TypeError, ValueError, OverflowError) as exc:
-        raise InvalidInputError("A and b must contain valid numeric values.") from exc
+    A = as_float_array(A, "A")
+    b = as_float_array(b, "b")
 
     if (
         A.ndim != 2

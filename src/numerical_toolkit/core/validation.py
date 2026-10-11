@@ -3,6 +3,8 @@ from __future__ import annotations
 import math
 from numbers import Real
 
+import numpy as np
+
 from numerical_toolkit.core.exceptions import (
     InvalidInputError,
     NonFiniteValueError,
@@ -115,3 +117,35 @@ def validate_options(
         )
 
     return options
+
+
+def as_float_array(
+    value: object,
+    name: str = "value",
+) -> np.ndarray:
+    """
+    Convert array-like numeric input to a floating-point NumPy array.
+
+    Ragged, non-numeric, boolean, and complex inputs raise
+    InvalidInputError instead of a raw NumPy exception. Shape and
+    finiteness are left to the caller.
+    """
+
+    try:
+        raw = np.asarray(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise InvalidInputError(
+            f"{name} must be a valid numeric array."
+        ) from exc
+
+    if raw.dtype.kind in "bc":
+        raise InvalidInputError(
+            f"{name} must contain real, non-boolean values."
+        )
+
+    try:
+        return np.asarray(raw, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise InvalidInputError(
+            f"{name} must contain numeric values."
+        ) from exc

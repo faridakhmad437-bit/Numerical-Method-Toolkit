@@ -8,12 +8,13 @@ from numerical_toolkit.core.exceptions import (
 )
 from numerical_toolkit.core.options import SolverOptions
 from numerical_toolkit.core.results import SolverResult
+from numerical_toolkit.core.validation import as_float_array
 
 
 def _validate_initial_guess(x0) -> np.ndarray:
     """Validate Newton system initial guess."""
 
-    x = np.asarray(x0, dtype=float)
+    x = as_float_array(x0, "x0")
 
     if x.ndim != 1:
         raise InvalidInputError(
@@ -113,10 +114,7 @@ def newton_system(
     # ---------------------------------------------------------
     # Initial function evaluation
     # ---------------------------------------------------------
-    fx = np.asarray(
-        F(x),
-        dtype=float,
-    )
+    fx = as_float_array(F(x), "F(x)")
 
     function_calls = 1
 
@@ -180,10 +178,7 @@ def newton_system(
         # -----------------------------------------------------
         # Evaluate Jacobian
         # -----------------------------------------------------
-        jac = np.asarray(
-            J(x),
-            dtype=float,
-        )
+        jac = as_float_array(J(x), "J(x)")
 
         function_calls += 1
 
@@ -245,10 +240,7 @@ def newton_system(
         # -----------------------------------------------------
         # Evaluate new residual
         # -----------------------------------------------------
-        fx_new = np.asarray(
-            F(x_new),
-            dtype=float,
-        )
+        fx_new = as_float_array(F(x_new), "F(x)")
 
         function_calls += 1
 
@@ -343,10 +335,7 @@ def newton_system(
 def _validate_target(target) -> np.ndarray:
     """Validate a 2D planar target."""
 
-    target_array = np.asarray(
-        target,
-        dtype=float,
-    )
+    target_array = as_float_array(target, "target")
 
     if target_array.ndim != 1:
         raise InvalidInputError(

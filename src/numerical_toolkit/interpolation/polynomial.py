@@ -6,6 +6,7 @@ from numerical_toolkit.core.exceptions import (
     InvalidInputError,
     NonFiniteValueError,
 )
+from numerical_toolkit.core.validation import as_float_array
 
 
 def _validate_interpolation_inputs(
@@ -46,8 +47,8 @@ def _validate_interpolation_inputs(
     # Convert x and y to NumPy arrays
     # ------------------------------------------------------------------
 
-    x = np.asarray(x, dtype=float)
-    y = np.asarray(y, dtype=float)
+    x = as_float_array(x, "x")
+    y = as_float_array(y, "y")
 
     # ------------------------------------------------------------------
     # Validate dimensions
@@ -113,6 +114,11 @@ def _validate_interpolation_inputs(
     if xq_array.ndim != 0:
         raise InvalidInputError(
             "xq must be a scalar query point."
+        )
+
+    if xq_array.dtype.kind in "bc":
+        raise InvalidInputError(
+            "xq must be a real, non-boolean scalar."
         )
 
     try:
