@@ -112,3 +112,21 @@ def test_secant_history_is_recorded():
 
     assert result.history is not None
     assert len(result.history) == result.iterations + 2
+
+def test_secant_does_not_stop_on_small_step_with_large_residual():
+    scale = 1e12
+
+    result = secant(
+        lambda x: math.exp(scale * x),
+        0.0,
+        1e-12,
+        options=SolverOptions(
+            maxiter=1,
+            xtol=1e-10,
+            rtol=1e-8,
+            ftol=1e-10,
+        ),
+    )
+
+    assert result.converged is False
+    assert result.residual > 1e-10

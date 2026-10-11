@@ -22,7 +22,28 @@ def secant(f:Callable[[float],float], x0:float, x1:float, *, options:SolverOptio
         f2=float(f(x2)); calls+=1; validate_finite_scalar(f2,"f(x2)")
         step=abs(x2-x1); rel=step/max(1.0,abs(x2))
         if o.store_history: hist.append(x2)
-        if abs(f2)<=o.ftol or step<=o.xtol or rel<=o.rtol:
-            return SolverResult(x2,True,k,calls,abs(f2),step,"Converged successfully.",tuple(hist) if o.store_history else None)
+        if abs(f2) <= o.ftol:
+            return SolverResult(
+                x2,
+                True,
+                k,
+                calls,
+                abs(f2),
+                step,
+                "Converged successfully: residual tolerance satisfied.",
+                tuple(hist) if o.store_history else None,
+            )
+
+        if step <= o.xtol or rel <= o.rtol:
+            return SolverResult(
+                x2,
+                False,
+                k,
+                calls,
+                abs(f2),
+                step,
+                "Step tolerance reached before residual tolerance.",
+                tuple(hist) if o.store_history else None,
+            )
         x0,f0,x1,f1=x1,f1,x2,f2; prev_step=step
     return SolverResult(x1,False,o.maxiter,calls,abs(f1),prev_step,"Maximum number of iterations reached.",tuple(hist) if o.store_history else None)
