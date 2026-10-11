@@ -198,3 +198,54 @@ def test_rk4_preserves_initial_state():
         values[0],
         y0,
     )
+
+
+@pytest.mark.parametrize(
+    "t0,t_end,h",
+    [
+        (math.nan, 1.0, 0.1),
+        (0.0, math.nan, 0.1),
+        (0.0, 1.0, math.nan),
+        (0.0, 1.0, math.inf),
+    ],
+)
+def test_rk4_rejects_non_finite_time_parameters(t0, t_end, h):
+    from numerical_toolkit.core.exceptions import NonFiniteValueError
+
+    with pytest.raises(NonFiniteValueError):
+        rk4(lambda t, y: y, t0, 1.0, t_end, h)
+
+
+def test_rk4_rejects_boolean_step():
+    with pytest.raises(InvalidInputError):
+        rk4(lambda t, y: y, 0.0, 1.0, 1.0, True)
+
+
+@pytest.mark.parametrize("bad_value", [math.nan, math.inf, -math.inf])
+def test_rk4_rejects_non_finite_initial_state(bad_value):
+    from numerical_toolkit.core.exceptions import NonFiniteValueError
+
+    with pytest.raises(NonFiniteValueError):
+        rk4(lambda t, y: y, 0.0, bad_value, 1.0, 0.1)
+
+
+@pytest.mark.parametrize("bad_value", [math.nan, math.inf, -math.inf])
+def test_rk4_rejects_non_finite_derivative(bad_value):
+    from numerical_toolkit.core.exceptions import NonFiniteValueError
+
+    with pytest.raises(NonFiniteValueError):
+        rk4(lambda t, y: bad_value, 0.0, 1.0, 1.0, 0.1)
+
+
+def test_rk4_handles_very_short_interval():
+    times, values = rk4(
+        lambda t, y: 1.0,
+        0.0,
+        0.0,
+        1e-16,
+        1e-17,
+    )
+
+    assert times[-1] == pytest.approx(1e-16, abs=1e-30)
+    assert len(times) > 1
+    assert values[-1] == pytest.approx(1e-16, abs=1e-30)
