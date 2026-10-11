@@ -262,3 +262,42 @@ def test_gauss_seidel_does_not_mutate_inputs():
     assert np.array_equal(A, A_original)
     assert np.array_equal(b, b_original)
     assert np.array_equal(x0, x0_original)
+
+
+def test_gauss_seidel_handles_small_scaled_system():
+    A = np.array([
+        [4e-20, 1e-20],
+        [2e-20, 3e-20],
+    ])
+    b = np.array([1e-20, 2e-20])
+
+    options = SolverOptions(
+        xtol=1e-12,
+        ftol=1e-32,
+        maxiter=100,
+    )
+
+    result = gauss_seidel(A, b, options=options)
+
+    assert result.converged
+    assert np.allclose(result.solution, [0.1, 0.6], atol=1e-10)
+
+
+def test_gauss_seidel_rejects_boolean_matrix_input():
+    A = np.array([
+        [True, False],
+        [False, True],
+    ])
+    b = np.array([1.0, 2.0])
+
+    with pytest.raises(InvalidInputError):
+        gauss_seidel(A, b)
+
+
+def test_gauss_seidel_rejects_boolean_initial_guess():
+    A = np.eye(2)
+    b = np.array([1.0, 2.0])
+    x0 = np.array([True, False])
+
+    with pytest.raises(InvalidInputError):
+        gauss_seidel(A, b, x0=x0)
