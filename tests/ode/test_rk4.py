@@ -249,3 +249,8 @@ def test_rk4_handles_very_short_interval():
     assert times[-1] == pytest.approx(1e-16, abs=1e-30)
     assert len(times) > 1
     assert values[-1] == pytest.approx(1e-16, abs=1e-30)
+
+
+def test_rk4_rejects_boolean_initial_state():
+    with pytest.raises(InvalidInputError):
+        rk4(lambda t, y: y, 0.0, [True, False], 1.0, 0.5)

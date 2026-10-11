@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import math
-
+from numbers import Real
 
 from numerical_toolkit.core.exceptions import (
     InvalidInputError,
     NonFiniteValueError,
 )
+from numerical_toolkit.core.options import SolverOptions
 
 
 def validate_callable(
@@ -45,7 +46,9 @@ def validate_finite_scalar(
         Human-readable name used in the error message.
     """
 
-    if not isinstance(value, (int, float)):
+    # bool is a subclass of int in Python, so reject it explicitly.
+    # numbers.Real also admits NumPy integer and floating scalars.
+    if isinstance(value, bool) or not isinstance(value, Real):
         raise InvalidInputError(
             f"{name} must be a real scalar."
         )
@@ -94,3 +97,21 @@ def validate_non_negative(
         )
 
     return value
+
+
+def validate_options(
+    options: SolverOptions | None,
+) -> SolverOptions:
+    """
+    Return solver options, using the defaults when ``options`` is None.
+    """
+
+    if options is None:
+        return SolverOptions()
+
+    if not isinstance(options, SolverOptions):
+        raise InvalidInputError(
+            "options must be a SolverOptions instance or None."
+        )
+
+    return options

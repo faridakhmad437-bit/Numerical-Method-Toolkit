@@ -5,6 +5,7 @@ from .exceptions import (
     InvalidInputError,
     NonFiniteValueError,
     NumericalMethodError,
+    SecantDenominatorZeroError,
 )
 from .options import SolverOptions
 from .results import SolverResult
@@ -16,6 +17,7 @@ __all__ = [
     "InvalidInputError",
     "NonFiniteValueError",
     "NumericalMethodError",
+    "SecantDenominatorZeroError",
     "SolverOptions",
     "SolverResult",
 ]

@@ -3,11 +3,11 @@ from collections.abc import Callable
 from numerical_toolkit.core.exceptions import DerivativeZeroError, NonFiniteValueError
 from numerical_toolkit.core.options import SolverOptions
 from numerical_toolkit.core.results import SolverResult
-from numerical_toolkit.core.validation import validate_callable, validate_finite_scalar
+from numerical_toolkit.core.validation import validate_callable, validate_finite_scalar, validate_options
 
 def newton(f: Callable[[float],float], df: Callable[[float],float], x0: float, *, options: SolverOptions|None=None)->SolverResult:
     validate_callable(f,"f"); validate_callable(df,"df"); validate_finite_scalar(x0,"x0")
-    o=options or SolverOptions(); x=float(x0); fx=float(f(x)); calls=1
+    o=validate_options(options); x=float(x0); fx=float(f(x)); calls=1
     if not math.isfinite(fx): raise NonFiniteValueError("f(x0) must be finite.")
     if fx==0: return SolverResult(x,True,0,calls,0.0,0.0,"Initial guess is an exact root.", (x,) if o.store_history else None)
     hist=[]; prev_step=None

@@ -1,6 +1,7 @@
 
 import math
 from collections.abc import Callable
+from numbers import Integral
 
 from numerical_toolkit.core.exceptions import InvalidInputError, NonFiniteValueError
 from numerical_toolkit.core.validation import (
@@ -17,11 +18,13 @@ def trapezoidal(
 ) -> float:
     """Approximate a definite integral using the composite trapezoidal rule."""
     validate_callable(f, "f")
-    validate_finite_scalar(a, "a")
-    validate_finite_scalar(b, "b")
+    a = validate_finite_scalar(a, "a")
+    b = validate_finite_scalar(b, "b")
 
-    if isinstance(n, bool) or not isinstance(n, int) or n <= 0:
+    if isinstance(n, bool) or not isinstance(n, Integral) or n <= 0:
         raise InvalidInputError("n must be a positive integer.")
+
+    n = int(n)
 
     h = (b - a) / n
 

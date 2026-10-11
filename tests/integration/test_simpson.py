@@ -117,3 +117,10 @@ def test_simpson_convergence_is_fourth_order():
 def test_simpson_rejects_boolean_n(n):
     with pytest.raises(InvalidInputError):
         simpson(lambda x: x, 0.0, 1.0, n)
+
+def test_simpson_accepts_numpy_integer_n():
+    import numpy as np
+
+    result = simpson(lambda x: x * x, 0.0, 1.0, np.int64(4))
+
+    assert result == pytest.approx(1.0 / 3.0)

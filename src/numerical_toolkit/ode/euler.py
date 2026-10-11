@@ -34,7 +34,15 @@ def euler(
         raise InvalidInputError("t_end must be >= t0.")
 
     try:
-        y = np.asarray(y0, dtype=float)
+        raw_y0 = np.asarray(y0)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise InvalidInputError("y0 must contain valid numeric values.") from exc
+
+    if raw_y0.dtype.kind == "b":
+        raise InvalidInputError("y0 must contain numeric, non-boolean values.")
+
+    try:
+        y = np.asarray(raw_y0, dtype=float)
     except (TypeError, ValueError, OverflowError) as exc:
         raise InvalidInputError("y0 must contain valid numeric values.") from exc
 

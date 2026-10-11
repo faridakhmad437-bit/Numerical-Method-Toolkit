@@ -104,3 +104,10 @@ def test_trapezoidal_convergence_is_second_order():
 def test_trapezoidal_rejects_boolean_n():
     with pytest.raises(InvalidInputError):
         trapezoidal(lambda x: x, 0.0, 1.0, True)
+
+def test_trapezoidal_accepts_numpy_integer_n():
+    import numpy as np
+
+    result = trapezoidal(lambda x: x, 0.0, 1.0, np.int64(4))
+
+    assert result == pytest.approx(0.5)

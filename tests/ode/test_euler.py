@@ -206,3 +206,8 @@ def test_euler_rejects_non_finite_derivative(bad_value):
 
     with pytest.raises(NonFiniteValueError):
         euler(lambda t, y: bad_value, 0.0, 1.0, 1.0, 0.1)
+
+
+def test_euler_rejects_boolean_initial_state():
+    with pytest.raises(InvalidInputError):
+        euler(lambda t, y: y, 0.0, [True, False], 1.0, 0.5)

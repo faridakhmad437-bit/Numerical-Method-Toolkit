@@ -8,6 +8,7 @@ from numerical_toolkit.core.results import SolverResult
 from numerical_toolkit.core.validation import (
     validate_callable,
     validate_finite_scalar,
+    validate_options,
 )
 
 
@@ -21,7 +22,7 @@ def fixed_point(
     validate_callable(g, "g")
     validate_finite_scalar(x0, "x0")
 
-    o = options or SolverOptions()
+    o = validate_options(options)
     x = float(x0)
     history = []
     calls = 0
