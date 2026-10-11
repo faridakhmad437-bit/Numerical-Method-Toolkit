@@ -21,7 +21,6 @@ if str(PROJECT_ROOT) not in sys.path:
 # Imports
 # ---------------------------------------------------------------------------
 
-from numerical_toolkit.linear.jacobi import jacobi
 
 
 # ---------------------------------------------------------------------------
@@ -361,7 +360,7 @@ for name, system in systems.items():
     print("\nJacobi iteration matrix B_J =")
     print(B)
 
-    print(f"\nSpectral radius:")
+    print("\nSpectral radius:")
     print(f"  rho(B_J) = {rho:.6f}")
 
     if rho < 1:
