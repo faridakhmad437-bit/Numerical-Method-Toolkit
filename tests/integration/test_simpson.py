@@ -112,3 +112,8 @@ def test_simpson_convergence_is_fourth_order():
     # Composite Simpson's 1/3 rule has O(h^4) error,
     # so doubling n should reduce the error by approximately 16.
     assert ratio == pytest.approx(16.0, rel=0.05)
+
+@pytest.mark.parametrize("n", [True, False])
+def test_simpson_rejects_boolean_n(n):
+    with pytest.raises(InvalidInputError):
+        simpson(lambda x: x, 0.0, 1.0, n)
