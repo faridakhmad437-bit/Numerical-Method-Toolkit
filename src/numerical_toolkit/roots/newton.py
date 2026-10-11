@@ -1,6 +1,5 @@
 import math
 from collections.abc import Callable
-from matplotlib.pyplot import step
 from numerical_toolkit.core.exceptions import DerivativeZeroError, NonFiniteValueError
 from numerical_toolkit.core.options import SolverOptions
 from numerical_toolkit.core.results import SolverResult
