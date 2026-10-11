@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from math import isfinite
+from numbers import Integral, Real
 
 @dataclass(frozen=True)
 class SolverResult:
@@ -46,36 +48,46 @@ class SolverResult:
     step_error: float | None
     message: str
     history: tuple[Any, ...] | None = None
-
+        
     def __post_init__(self) -> None:
-        if self.iterations < 0:
-            raise ValueError(
-                "iterations must be non-negative."
-            )
+        # Validate iteration and evaluation counts.
+        for name in ("iterations", "function_calls"):
+            value = getattr(self, name)
 
-        if self.function_calls < 0:
-            raise ValueError(
-                "function_calls must be non-negative."
-            )
+            if isinstance(value, bool) or not isinstance(value, Integral):
+                raise TypeError(f"{name} must be an integer.")
+
+            if value < 0:
+                raise ValueError(
+                    f"{name} must be non-negative."
+                )
 
         if not isinstance(self.converged, bool):
             raise TypeError(
                 "converged must be a boolean."
             )
 
+        if not isinstance(self.message, str):
+            raise TypeError("message must be a string.")
+
         if not self.message.strip():
-            raise ValueError(
-                "message must not be empty."
-            )
+            raise ValueError("message must not be empty.")
 
-        if self.residual is not None:
-            if self.residual < 0:
+        # Validate optional numerical diagnostics.
+        for name in ("residual", "step_error"):
+            value = getattr(self, name)
+
+            if value is None:
+                continue
+
+            if isinstance(value, bool) or not isinstance(value, Real):
+                raise TypeError(f"{name} must be a real number or None.")
+
+            if not isfinite(value):
+                raise ValueError(f"{name} must be finite.")
+
+            if value < 0:
                 raise ValueError(
-                    "residual must be non-negative."
+                    f"{name} must be non-negative."
                 )
 
-        if self.step_error is not None:
-            if self.step_error < 0:
-                raise ValueError(
-                    "step_error must be non-negative."
-                )
