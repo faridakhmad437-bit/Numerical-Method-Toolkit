@@ -282,10 +282,17 @@ def newton_system(
         # Convergence
         #
         # A small step alone is insufficient. Both the step and
-        # residual must satisfy their respective tolerances.
+        # residual must satisfy their respective tolerances. The
+        # step tolerance combines xtol and rtol, as in the
+        # iterative linear solvers.
         # -----------------------------------------------------
+        step_tolerance = (
+            options.xtol
+            + options.rtol * float(np.linalg.norm(x_new, ord=np.inf))
+        )
+
         if (
-            step_error <= options.xtol
+            step_error <= step_tolerance
             and new_residual <= options.ftol
         ):
             return SolverResult(

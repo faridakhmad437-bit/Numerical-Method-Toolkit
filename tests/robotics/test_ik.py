@@ -674,3 +674,30 @@ def test_planar_2link_ik_rejects_scalar_target():
             1.0,
             1.0,
         )
+
+def test_newton_system_applies_relative_step_tolerance():
+    # Near x = 1.4e8 a floating-point spacing (~3e-8) exceeds xtol, so an
+    # absolute-only step criterion can never be met even at the root.
+    c = 2e16
+
+    result = newton_system(
+        lambda x: x**2 - c,
+        lambda x: np.diag(2.0 * x),
+        [np.sqrt(c) * 1.01],
+        options=SolverOptions(ftol=1e3, maxiter=50),
+    )
+
+    assert result.converged
+    assert result.iterations < 50
+    assert abs(result.solution[0] - np.sqrt(c)) <= 1e-8 * np.sqrt(c)
+
+
+def test_newton_system_relative_tolerance_does_not_skip_residual_check():
+    result = newton_system(
+        lambda x: x**2 - 2e16,
+        lambda x: np.diag(2.0 * x),
+        [np.sqrt(2e16) * 1.01],
+        options=SolverOptions(ftol=1e-12, rtol=1e-2, maxiter=5),
+    )
+
+    assert result.converged is False
