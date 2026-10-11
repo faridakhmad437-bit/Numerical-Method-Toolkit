@@ -354,3 +354,40 @@ def test_jacobi_does_not_modify_inputs():
     np.testing.assert_array_equal(A, A_original)
     np.testing.assert_array_equal(b, b_original)
     np.testing.assert_array_equal(x0, x0_original)
+
+
+def test_jacobi_handles_small_scaled_system():
+    A = np.array([
+        [4e-20, 1e-20],
+        [2e-20, 3e-20],
+    ])
+    b = np.array([1e-20, 2e-20])
+
+    result = jacobi(
+        A,
+        b,
+        options=SolverOptions(
+            ftol=1e-32,
+            xtol=1e-12,
+            maxiter=100,
+        ),
+    )
+
+    assert result.converged is True
+
+    np.testing.assert_allclose(
+        result.solution,
+        np.array([0.1, 0.6]),
+        atol=1e-10,
+    )
+
+
+def test_jacobi_rejects_boolean_matrix_input():
+    A = np.array([
+        [True, False],
+        [False, True],
+    ])
+    b = np.array([1.0, 2.0])
+
+    with pytest.raises(InvalidInputError):
+        jacobi(A, b)

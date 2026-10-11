@@ -1,10 +1,14 @@
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
-from numerical_toolkit.core.exceptions import InvalidInputError, NonFiniteValueError
+from numerical_toolkit.core.exceptions import (
+    InvalidInputError,
+    NonFiniteValueError,
+)
 from numerical_toolkit.core.options import SolverOptions
 from numerical_toolkit.core.results import SolverResult
 
@@ -16,31 +20,7 @@ def jacobi(
     *,
     options: SolverOptions | None = None,
 ) -> SolverResult:
-    """
-    Solve a linear system A @ x = b using the Jacobi iterative method.
-
-    Parameters
-    ----------
-    A : array-like
-        Square coefficient matrix.
-    b : array-like
-        Right-hand-side vector.
-    x0 : array-like, optional
-        Initial guess. Defaults to the zero vector.
-    options : SolverOptions, optional
-        Solver configuration.
-
-    Returns
-    -------
-    SolverResult
-        Numerical solution and convergence diagnostics.
-
-    Notes
-    -----
-    Jacobi convergence is not guaranteed for arbitrary matrices.
-    In practice, convergence is commonly associated with conditions
-    such as strict diagonal dominance or spectral radius rho(B_J) < 1.
-    """
+    """Solve A @ x = b using the Jacobi iterative method."""
     if options is None:
         options = SolverOptions()
 
@@ -49,12 +29,22 @@ def jacobi(
             "options must be a SolverOptions instance or None."
         )
 
-    A = np.asarray(A, dtype=float)
-    b = np.asarray(b, dtype=float)
+    # Reject boolean arrays before conversion to floating point.
+    raw_A = np.asarray(A)
+    raw_b = np.asarray(b)
 
-    # ------------------------------------------------------------------
-    # Validate system dimensions
-    # ------------------------------------------------------------------
+    if raw_A.dtype.kind == "b" or raw_b.dtype.kind == "b":
+        raise InvalidInputError(
+            "A and b must contain numeric, non-boolean values."
+        )
+
+    try:
+        A = np.asarray(A, dtype=float)
+        b = np.asarray(b, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise InvalidInputError(
+            "A and b must contain valid numeric values."
+        ) from exc
 
     if A.ndim != 2:
         raise InvalidInputError("A must be a two-dimensional matrix.")
@@ -71,80 +61,86 @@ def jacobi(
 
     if b.shape != (n,):
         raise InvalidInputError(
-            "b must be a one-dimensional vector with the same "
-            "length as A."
+            "b must be a one-dimensional vector with the same length as A."
         )
-
-    # ------------------------------------------------------------------
-    # Validate finite values
-    # ------------------------------------------------------------------
 
     if not np.all(np.isfinite(A)):
-        raise NonFiniteValueError(
-            "A must contain only finite values."
-        )
+        raise NonFiniteValueError("A must contain only finite values.")
 
     if not np.all(np.isfinite(b)):
-        raise NonFiniteValueError(
-            "b must contain only finite values."
-        )
-
-    # ------------------------------------------------------------------
-    # Validate diagonal
-    # ------------------------------------------------------------------
+        raise NonFiniteValueError("b must contain only finite values.")
 
     diagonal = np.diag(A)
 
-    if np.any(np.abs(diagonal) < 1e-15):
+    if np.any(diagonal == 0.0):
         raise InvalidInputError(
             "Jacobi requires nonzero diagonal entries."
         )
 
-    # ------------------------------------------------------------------
-    # Validate initial guess
-    # ------------------------------------------------------------------
-
     if x0 is None:
         x = np.zeros_like(b)
     else:
-        x = np.asarray(x0, dtype=float).copy()
+        raw_x0 = np.asarray(x0)
+
+        if raw_x0.dtype.kind == "b":
+            raise InvalidInputError(
+                "x0 must contain numeric, non-boolean values."
+            )
+
+        try:
+            x = np.asarray(x0, dtype=float).copy()
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise InvalidInputError(
+                "x0 must contain valid numeric values."
+            ) from exc
 
         if x.shape != b.shape:
-            raise InvalidInputError(
-                "x0 must have the same shape as b."
-            )
+            raise InvalidInputError("x0 must have the same shape as b.")
 
         if not np.all(np.isfinite(x)):
             raise NonFiniteValueError(
                 "x0 must contain only finite values."
             )
 
-    # ------------------------------------------------------------------
-    # Jacobi decomposition
-    # ------------------------------------------------------------------
+    # Normalize the system by its largest coefficient to reduce
+    # intermediate scaling problems without changing the solution.
+    matrix_scale = float(np.max(np.abs(A)))
 
-    D = diagonal
-    R = A - np.diagflat(D)
+    if matrix_scale == 0.0:
+        raise InvalidInputError(
+            "Jacobi cannot solve a system with a zero coefficient matrix."
+        )
+
+    A_scaled = A / matrix_scale
+    b_scaled = b / matrix_scale
+    diagonal_scaled = np.diag(A_scaled)
+
+    R = A_scaled - np.diagflat(diagonal_scaled)
 
     history: list[Any] = []
 
-    residual = float(
-        np.linalg.norm(A @ x - b, ord=np.inf)
-    )
+    def calculate_residual(solution):
+        with np.errstate(over="ignore", invalid="ignore"):
+            value = np.linalg.norm(A @ solution - b, ord=np.inf)
 
+        if not np.isfinite(value):
+            raise NonFiniteValueError(
+                "Jacobi residual calculation produced a non-finite value."
+            )
+
+        return float(value)
+
+    residual = calculate_residual(x)
     step_error: float | None = None
 
     if options.store_history:
-        history.append(
-            {
-                "iteration": 0,
-                "solution": x.copy(),
-                "residual": residual,
-                "step_error": None,
-            }
-        )
+        history.append({
+            "iteration": 0,
+            "solution": x.copy(),
+            "residual": residual,
+            "step_error": None,
+        })
 
-    # Initial convergence check
     if residual <= options.ftol:
         return SolverResult(
             solution=x,
@@ -157,41 +153,27 @@ def jacobi(
             history=tuple(history) if options.store_history else None,
         )
 
-    # ------------------------------------------------------------------
-    # Iteration
-    # ------------------------------------------------------------------
-
     for k in range(1, options.maxiter + 1):
-        x_new = (b - R @ x) / D
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            x_new = (b_scaled - R @ x) / diagonal_scaled
 
         if not np.all(np.isfinite(x_new)):
             raise NonFiniteValueError(
                 "Jacobi iteration produced a non-finite value."
             )
 
-        step_error = float(
-            np.linalg.norm(x_new - x, ord=np.inf)
-        )
-
-        residual = float(
-            np.linalg.norm(A @ x_new - b, ord=np.inf)
-        )
+        step_error = float(np.linalg.norm(x_new - x, ord=np.inf))
+        residual = calculate_residual(x_new)
 
         if options.store_history:
-            history.append(
-                {
-                    "iteration": k,
-                    "solution": x_new.copy(),
-                    "residual": residual,
-                    "step_error": step_error,
-                }
-            )
+            history.append({
+                "iteration": k,
+                "solution": x_new.copy(),
+                "residual": residual,
+                "step_error": step_error,
+            })
 
-        # Both the update and the equation residual should be small.
-        if (
-            step_error <= options.xtol
-            and residual <= options.ftol
-        ):
+        if step_error <= options.xtol and residual <= options.ftol:
             return SolverResult(
                 solution=x_new,
                 converged=True,
@@ -204,10 +186,6 @@ def jacobi(
             )
 
         x = x_new
-
-    # ------------------------------------------------------------------
-    # Maximum iterations reached
-    # ------------------------------------------------------------------
 
     return SolverResult(
         solution=x,
