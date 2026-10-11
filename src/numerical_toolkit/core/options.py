@@ -1,6 +1,9 @@
+
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
+from numbers import Integral, Real
 
 
 @dataclass(frozen=True)
@@ -29,14 +32,24 @@ class SolverOptions:
     store_history: bool = True
 
     def __post_init__(self) -> None:
-        if self.xtol <= 0:
-            raise ValueError("xtol must be positive.")
+        # Validate tolerances before checking their numerical values.
+        for name in ("xtol", "rtol", "ftol"):
+            value = getattr(self, name)
 
-        if self.rtol <= 0:
-            raise ValueError("rtol must be positive.")
+            if isinstance(value, bool) or not isinstance(value, Real):
+                raise TypeError(f"{name} must be a real number.")
 
-        if self.ftol <= 0:
-            raise ValueError("ftol must be positive.")
+            if not isfinite(value):
+                raise ValueError(f"{name} must be finite.")
+
+            if value <= 0:
+                raise ValueError(f"{name} must be positive.")
+
+        # bool is a subclass of int in Python, so reject it explicitly.
+        if isinstance(self.maxiter, bool) or not isinstance(
+            self.maxiter, Integral
+        ):
+            raise TypeError("maxiter must be an integer.")
 
         if self.maxiter <= 0:
             raise ValueError("maxiter must be positive.")

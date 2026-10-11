@@ -34,3 +34,29 @@ def test_invalid_options(field, value):
 def test_invalid_history_type():
     with pytest.raises(TypeError):
         SolverOptions(store_history=1)
+
+
+@pytest.mark.parametrize("field", ["xtol", "rtol", "ftol"])
+@pytest.mark.parametrize(
+    "value",
+    [float("nan"), float("inf"), float("-inf")],
+)
+def test_tolerances_must_be_finite(field, value):
+    with pytest.raises(ValueError):
+        SolverOptions(**{field: value})
+
+
+@pytest.mark.parametrize("field", ["xtol", "rtol", "ftol"])
+@pytest.mark.parametrize("value", [True, False])
+def test_tolerances_reject_booleans(field, value):
+    with pytest.raises(TypeError):
+        SolverOptions(**{field: value})
+
+
+@pytest.mark.parametrize(
+    "value",
+    [1.5, 2.0, True, False, float("nan"), float("inf")],
+)
+def test_maxiter_must_be_an_integer(value):
+    with pytest.raises(TypeError):
+        SolverOptions(maxiter=value)
