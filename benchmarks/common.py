@@ -1,8 +1,11 @@
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from time import perf_counter
 from typing import Any, Callable
+
+import numpy as np
 
 from numerical_toolkit.core.results import SolverResult
 
@@ -19,6 +22,35 @@ class BenchmarkResult:
     iterations: int
     function_calls: int
     runtime_seconds: float
+
+
+def _calculate_error(
+    solution: Any,
+    exact_solution: Any,
+) -> float | None:
+    """Calculate absolute scalar error or Euclidean array error."""
+    try:
+        computed = np.asarray(solution, dtype=float)
+        exact = np.asarray(exact_solution, dtype=float)
+
+        if computed.shape != exact.shape:
+            return None
+
+        if not np.all(np.isfinite(computed)):
+            return None
+
+        if not np.all(np.isfinite(exact)):
+            return None
+
+        error = float(np.linalg.norm(computed - exact))
+
+        if not np.isfinite(error):
+            return None
+
+        return error
+
+    except (TypeError, ValueError, OverflowError):
+        return None
 
 
 def measure_solver(
@@ -39,20 +71,18 @@ def measure_solver(
         Zero-argument callable returning a SolverResult.
 
     exact_solution:
-        Optional exact solution used to calculate absolute error.
-        If omitted, error is reported as None.
+        Optional exact solution used to calculate error.
+        Scalars use absolute error; arrays use the Euclidean norm.
+        If omitted or incompatible, error is reported as None.
     """
     start = perf_counter()
     result = solver()
     runtime = perf_counter() - start
 
-    error: float | None = None
+    error = None
 
     if exact_solution is not None:
-        try:
-            error = abs(float(result.solution) - float(exact_solution))
-        except (TypeError, ValueError):
-            error = None
+        error = _calculate_error(result.solution, exact_solution)
 
     return BenchmarkResult(
         method=method,

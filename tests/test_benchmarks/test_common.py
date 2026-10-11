@@ -1,66 +1,19 @@
+
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from benchmarks.common import BenchmarkResult, measure_solver
 from numerical_toolkit.core.results import SolverResult
 
 
-def test_measure_solver_returns_benchmark_result():
+def make_solver(solution):
+    """Create a minimal solver returning a controlled result."""
+
     def solver():
         return SolverResult(
-            solution=2.0,
-            converged=True,
-            iterations=5,
-            function_calls=6,
-            residual=1e-12,
-            step_error=1e-10,
-            message="Converged.",
-            history=None,
-        )
-
-    result = measure_solver(
-        "Test Solver",
-        solver,
-        exact_solution=2.0,
-    )
-
-    assert isinstance(result, BenchmarkResult)
-    assert result.method == "Test Solver"
-    assert result.converged is True
-    assert result.solution == 2.0
-    assert result.error == 0.0
-    assert result.residual == 1e-12
-    assert result.iterations == 5
-    assert result.function_calls == 6
-    assert result.runtime_seconds >= 0.0
-
-
-def test_measure_solver_without_exact_solution():
-    def solver():
-        return SolverResult(
-            solution=3.0,
-            converged=True,
-            iterations=2,
-            function_calls=3,
-            residual=1e-8,
-            step_error=1e-6,
-            message="Converged.",
-            history=None,
-        )
-
-    result = measure_solver(
-        "Test Solver",
-        solver,
-    )
-
-    assert result.error is None
-
-
-def test_measure_solver_supports_array_solution():
-    def solver():
-        return SolverResult(
-            solution=np.array([1.0, 2.0]),
+            solution=solution,
             converged=True,
             iterations=3,
             function_calls=4,
@@ -70,35 +23,110 @@ def test_measure_solver_supports_array_solution():
             history=None,
         )
 
+    return solver
+
+
+def test_measure_solver_returns_benchmark_result():
     result = measure_solver(
-        "Vector Solver",
-        solver,
-        exact_solution=np.array([1.0, 2.0]),
+        "Test Solver",
+        make_solver(2.0),
+        exact_solution=2.0,
     )
 
-    # Scalar error calculation is intentionally unavailable
-    # for vector-valued solutions in this first abstraction.
+    assert isinstance(result, BenchmarkResult)
+    assert result.method == "Test Solver"
+    assert result.converged is True
+    assert result.solution == 2.0
+    assert result.error == 0.0
+    assert result.residual == 1e-10
+    assert result.iterations == 3
+    assert result.function_calls == 4
+    assert result.runtime_seconds >= 0.0
+
+
+def test_measure_solver_without_exact_solution():
+    result = measure_solver(
+        "Test Solver",
+        make_solver(3.0),
+    )
+
+    assert result.error is None
+
+
+def test_measure_solver_calculates_vector_error():
+    solution = np.array([1.0, 2.0])
+    exact_solution = np.array([1.0, 2.5])
+
+    result = measure_solver(
+        "Vector Solver",
+        make_solver(solution),
+        exact_solution=exact_solution,
+    )
+
+    assert result.error == pytest.approx(0.5)
+
+
+def test_measure_solver_calculates_multidimensional_error():
+    solution = np.array([[1.0, 2.0], [3.0, 4.0]])
+    exact_solution = np.array([[2.0, 2.0], [3.0, 6.0]])
+
+    result = measure_solver(
+        "Matrix Solver",
+        make_solver(solution),
+        exact_solution=exact_solution,
+    )
+
+    assert result.error == pytest.approx(np.sqrt(5.0))
+
+
+def test_measure_solver_returns_none_for_shape_mismatch():
+    result = measure_solver(
+        "Vector Solver",
+        make_solver(np.array([1.0, 2.0])),
+        exact_solution=np.array([1.0, 2.0, 3.0]),
+    )
+
+    assert result.error is None
+
+
+@pytest.mark.parametrize(
+    "solution, exact_solution",
+    [
+        (np.array([1.0, np.nan]), np.array([1.0, 2.0])),
+        (np.array([1.0, np.inf]), np.array([1.0, 2.0])),
+        (np.array([1.0, 2.0]), np.array([1.0, np.nan])),
+    ],
+)
+def test_measure_solver_returns_none_for_non_finite_values(
+    solution,
+    exact_solution,
+):
+    result = measure_solver(
+        "Vector Solver",
+        make_solver(solution),
+        exact_solution=exact_solution,
+    )
+
+    assert result.error is None
+
+
+def test_measure_solver_returns_none_for_non_numeric_values():
+    result = measure_solver(
+        "Invalid Solver",
+        make_solver(["invalid"]),
+        exact_solution=[1.0],
+    )
+
     assert result.error is None
 
 
 def test_measure_solver_preserves_solver_solution():
     solution = np.array([1.0, 2.0])
 
-    def solver():
-        return SolverResult(
-            solution=solution,
-            converged=True,
-            iterations=1,
-            function_calls=2,
-            residual=0.0,
-            step_error=0.0,
-            message="Already converged.",
-            history=None,
-        )
-
     result = measure_solver(
         "Vector Solver",
-        solver,
+        make_solver(solution),
     )
 
+    assert result.solution is solution
     assert np.array_equal(result.solution, solution)
