@@ -100,3 +100,7 @@ def test_trapezoidal_convergence_is_second_order():
     # Composite trapezoidal rule has O(h^2) error,
     # so doubling n should reduce the error by approximately 4.
     assert ratio == pytest.approx(4.0, rel=0.05)
+
+def test_trapezoidal_rejects_boolean_n():
+    with pytest.raises(InvalidInputError):
+        trapezoidal(lambda x: x, 0.0, 1.0, True)
