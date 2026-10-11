@@ -391,3 +391,66 @@ def test_jacobi_rejects_boolean_matrix_input():
 
     with pytest.raises(InvalidInputError):
         jacobi(A, b)
+
+
+def test_jacobi_uses_relative_step_tolerance():
+    A = np.diag([1.0, 1.0])
+    b = np.array([1e6, 1e6])
+    x0 = np.zeros(2)
+
+    strict_options = SolverOptions(
+        xtol=1e-12,
+        rtol=1e-12,
+        ftol=1e-10,
+        maxiter=10,
+    )
+    relative_options = SolverOptions(
+        xtol=1e-12,
+        rtol=1e-2,
+        ftol=1e-10,
+        maxiter=10,
+    )
+
+    strict = jacobi(A, b, x0=x0, options=strict_options)
+    relative = jacobi(A, b, x0=x0, options=relative_options)
+
+    assert strict.converged
+    assert relative.converged
+    assert strict.iterations == relative.iterations
+
+
+
+def test_jacobi_relative_tolerance_changes_stopping_criterion():
+    A = np.array([
+        [4.0, 1.0],
+        [2.0, 3.0],
+    ])
+    b = np.array([1.0, 2.0])
+
+    strict = jacobi(
+        A,
+        b,
+        options=SolverOptions(
+            xtol=1e-14,
+            rtol=1e-14,
+            ftol=1e-2,
+            maxiter=100,
+        ),
+    )
+
+    relaxed = jacobi(
+        A,
+        b,
+        options=SolverOptions(
+            xtol=1e-14,
+            rtol=1e-2,
+            ftol=1e-2,
+            maxiter=100,
+        ),
+    )
+
+    assert strict.converged
+    assert relaxed.converged
+    assert strict.iterations > relaxed.iterations
+    assert strict.residual <= 1e-2
+    assert relaxed.residual <= 1e-2

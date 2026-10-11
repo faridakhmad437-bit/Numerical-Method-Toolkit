@@ -301,3 +301,39 @@ def test_gauss_seidel_rejects_boolean_initial_guess():
 
     with pytest.raises(InvalidInputError):
         gauss_seidel(A, b, x0=x0)
+
+
+def test_gauss_seidel_relative_tolerance_changes_stopping_criterion():
+    A = np.array([
+        [4.0, 1.0],
+        [2.0, 3.0],
+    ])
+    b = np.array([1.0, 2.0])
+
+    strict = gauss_seidel(
+        A,
+        b,
+        options=SolverOptions(
+            xtol=1e-14,
+            rtol=1e-14,
+            ftol=1e-2,
+            maxiter=100,
+        ),
+    )
+
+    relaxed = gauss_seidel(
+        A,
+        b,
+        options=SolverOptions(
+            xtol=1e-14,
+            rtol=1e-2,
+            ftol=1e-2,
+            maxiter=100,
+        ),
+    )
+
+    assert strict.converged
+    assert relaxed.converged
+    assert strict.iterations > relaxed.iterations
+    assert strict.residual <= 1e-2
+    assert relaxed.residual <= 1e-2

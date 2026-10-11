@@ -232,7 +232,12 @@ def gauss_seidel(
                 }
             )
 
-        if step_error <= options.xtol and residual <= options.ftol:
+        step_tolerance = (
+            options.xtol
+            + options.rtol * np.linalg.norm(x, ord=np.inf)
+        )
+
+        if step_error <= step_tolerance and residual <= options.ftol:
             return SolverResult(
                 solution=x.copy(),
                 converged=True,
