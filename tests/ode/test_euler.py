@@ -155,3 +155,54 @@ def test_euler_preserves_initial_state():
 
     assert np.array_equal(y0, np.array([1.0, 2.0]))
     np.testing.assert_array_equal(values[0], y0)
+
+
+def test_euler_handles_very_short_interval():
+    times, values = euler(
+        lambda t, y: 1.0,
+        0.0,
+        0.0,
+        1e-16,
+        1e-17,
+    )
+
+    assert times[-1] == pytest.approx(1e-16, abs=1e-30)
+    assert len(times) > 1
+    assert values[-1] == pytest.approx(1e-16, abs=1e-30)
+
+
+@pytest.mark.parametrize(
+    "t0,t_end,h",
+    [
+        (math.nan, 1.0, 0.1),
+        (0.0, math.nan, 0.1),
+        (0.0, 1.0, math.nan),
+        (0.0, 1.0, math.inf),
+    ],
+)
+def test_euler_rejects_non_finite_time_parameters(t0, t_end, h):
+    from numerical_toolkit.core.exceptions import NonFiniteValueError
+
+    with pytest.raises(NonFiniteValueError):
+        euler(lambda t, y: y, t0, 1.0, t_end, h)
+
+
+def test_euler_rejects_boolean_step():
+    with pytest.raises(InvalidInputError):
+        euler(lambda t, y: y, 0.0, 1.0, 1.0, True)
+
+
+@pytest.mark.parametrize("bad_value", [math.nan, math.inf, -math.inf])
+def test_euler_rejects_non_finite_initial_state(bad_value):
+    from numerical_toolkit.core.exceptions import NonFiniteValueError
+
+    with pytest.raises(NonFiniteValueError):
+        euler(lambda t, y: y, 0.0, bad_value, 1.0, 0.1)
+
+
+@pytest.mark.parametrize("bad_value", [math.nan, math.inf, -math.inf])
+def test_euler_rejects_non_finite_derivative(bad_value):
+    from numerical_toolkit.core.exceptions import NonFiniteValueError
+
+    with pytest.raises(NonFiniteValueError):
+        euler(lambda t, y: bad_value, 0.0, 1.0, 1.0, 0.1)
